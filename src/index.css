@@ -17,7 +17,7 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 222.2 47.4% 11.2%;
+    --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 210 40% 98%;
 
     --secondary: 210 40% 96.1%;
@@ -32,11 +32,37 @@ All colors MUST be HSL.
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
+    --success: 142.1 76.2% 36.3%;
+    --success-foreground: 210 40% 98%;
+
+    --warning: 47.9 95.8% 53.1%;
+    --warning-foreground: 26 83.3% 14.1%;
+
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --ring: 217.2 91.2% 59.8%;
 
     --radius: 0.5rem;
+
+    /* Smart Trolley Design System */
+    --trolley-primary: 217.2 91.2% 59.8%;
+    --trolley-secondary: 142.1 76.2% 36.3%;
+    --trolley-accent: 47.9 95.8% 53.1%;
+    --trolley-danger: 0 84.2% 60.2%;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--trolley-primary)), hsl(var(--trolley-secondary)));
+    --gradient-glass: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+    --gradient-hero: linear-gradient(135deg, hsl(var(--trolley-primary)/0.1), hsl(var(--trolley-secondary)/0.05));
+
+    /* Glass Effects */
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 
     --sidebar-background: 0 0% 98%;
 
@@ -65,8 +91,8 @@ All colors MUST be HSL.
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 84% 4.9%;
 
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
@@ -80,9 +106,20 @@ All colors MUST be HSL.
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
+    --success: 142.1 76.2% 36.3%;
+    --success-foreground: 210 40% 98%;
+
+    --warning: 47.9 95.8% 53.1%;
+    --warning-foreground: 26 83.3% 14.1%;
+
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --ring: 217.2 91.2% 59.8%;
+
+    /* Dark Glass Effects */
+    --glass-bg: rgba(0, 0, 0, 0.3);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -101,5 +138,68 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+/* Custom Utility Classes */
+@layer utilities {
+  .glass {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    box-shadow: var(--glass-shadow);
+  }
+
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-glass {
+    background: var(--gradient-glass);
+  }
+
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  .transition-smooth {
+    transition: var(--transition-smooth);
+  }
+
+  .transition-spring {
+    transition: var(--transition-spring);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+
+  .pulse-ring {
+    animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+  }
+
+  .status-online {
+    @apply bg-green-500 text-white;
+  }
+
+  .status-offline {
+    @apply bg-red-500 text-white;
+  }
+
+  .status-warning {
+    @apply bg-yellow-500 text-black;
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.33);
+    opacity: 1;
+  }
+  80%, 100% {
+    transform: scale(1.5);
+    opacity: 0;
   }
 }
