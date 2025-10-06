@@ -10,12 +10,15 @@ import { toast } from 'sonner';
 import { 
   ScanLine, ShoppingCart, Plus, LogOut, User, Search, 
   Filter, Truck, Battery, Wifi, Activity, TrendingUp,
-  Clock, Package, Zap 
+  Clock, Package, Zap, Scale
 } from 'lucide-react';
 import StatusChip from '@/components/StatusChip';
 import BatteryRing from '@/components/BatteryRing';
 import ProductCard from '@/components/ProductCard';
 import TrolleyMap from '@/components/TrolleyMap';
+import WeightDisplay from '@/components/WeightDisplay';
+import USBStatus from '@/components/USBStatus';
+import UnbilledItemsAlert from '@/components/UnbilledItemsAlert';
 
 interface Product {
   id: string;
@@ -45,6 +48,25 @@ const Scan = () => {
     location: 'Zone A-3',
     items: 12
   });
+  
+  // Weight sensor state
+  const [weightData, setWeightData] = useState({
+    currentWeight: 0,
+    expectedWeight: 0,
+    tolerance: 0.05,
+    status: 'match' as 'match' | 'mismatch' | 'warning'
+  });
+  
+  // USB URTF reader state
+  const [usbConnected, setUsbConnected] = useState(false);
+  const [unbilledItems, setUnbilledItems] = useState<Array<{
+    id: string;
+    name: string;
+    barcode: string;
+    price: number;
+    weight: number;
+  }>>([]);
+  
   const { user, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
 
@@ -57,7 +79,7 @@ const Scan = () => {
     fetchProducts();
     
     // Simulate real-time trolley updates
-    const interval = setInterval(() => {
+    const trolleyInterval = setInterval(() => {
       setTrolleyStatus(prev => ({
         ...prev,
         battery: Math.max(20, prev.battery + (Math.random() > 0.5 ? 1 : -1)),
@@ -66,8 +88,24 @@ const Scan = () => {
       }));
     }, 5000);
     
-    return () => clearInterval(interval);
-  }, [user, navigate]);
+    // Simulate real-time weight sensor updates
+    const weightInterval = setInterval(() => {
+      updateWeightData();
+    }, 3000);
+    
+    // Simulate URTF reader scanning for unbilled items
+    const urtfInterval = setInterval(() => {
+      if (usbConnected) {
+        scanForUnbilledItems();
+      }
+    }, 5000);
+    
+    return () => {
+      clearInterval(trolleyInterval);
+      clearInterval(weightInterval);
+      clearInterval(urtfInterval);
+    };
+  }, [user, navigate, usbConnected]);
 
   useEffect(() => {
     // Filter products based on search query
@@ -108,12 +146,83 @@ const Scan = () => {
     
     const { data, error } = await supabase
       .from('cart')
-      .select('quantity')
+      .select('quantity, product_id, products(average_weight)')
       .eq('user_id', user.id);
     
     if (!error && data) {
       const total = data.reduce((sum, item) => sum + item.quantity, 0);
       setCartCount(total);
+      
+      // Calculate expected weight from cart items
+      const expected = data.reduce((sum, item: any) => {
+        const weight = item.products?.average_weight || 0;
+        return sum + (weight * item.quantity);
+      }, 0);
+      
+      setWeightData(prev => ({ ...prev, expectedWeight: expected }));
+    }
+  };
+
+  const updateWeightData = async () => {
+    // Simulate weight sensor reading with slight variations
+    const simulatedWeight = weightData.expectedWeight * (0.95 + Math.random() * 0.1);
+    
+    const discrepancy = Math.abs(simulatedWeight - weightData.expectedWeight);
+    const toleranceAmount = weightData.expectedWeight * weightData.tolerance;
+    
+    let status: 'match' | 'mismatch' | 'warning' = 'match';
+    if (discrepancy > toleranceAmount) {
+      status = discrepancy > toleranceAmount * 2 ? 'mismatch' : 'warning';
+    }
+    
+    setWeightData(prev => ({
+      ...prev,
+      currentWeight: simulatedWeight,
+      status
+    }));
+
+    // Log to monitoring table if there's a significant discrepancy
+    if (status === 'mismatch' && user) {
+      await supabase.from('cart_monitoring').insert({
+        user_id: user.id,
+        session_id: user.id, // Use user ID as session ID for now
+        measured_weight: simulatedWeight,
+        expected_weight: weightData.expectedWeight,
+        discrepancy: discrepancy,
+        unbilled_items: unbilledItems.length > 0 ? unbilledItems : null,
+        status: 'active'
+      });
+    }
+  };
+
+  const scanForUnbilledItems = async () => {
+    if (!user) return;
+    
+    // Get current cart items
+    const { data: cartItems } = await supabase
+      .from('cart')
+      .select('product_id')
+      .eq('user_id', user.id);
+    
+    const billedProductIds = new Set(cartItems?.map(item => item.product_id) || []);
+    
+    // Simulate URTF reader detecting items in basket
+    // In production, this would interface with actual USB reader
+    const simulatedDetectedItems = products
+      .filter(() => Math.random() > 0.95) // Randomly detect some items
+      .filter(product => !billedProductIds.has(product.id))
+      .slice(0, 3)
+      .map(product => ({
+        id: product.id,
+        name: product.name,
+        barcode: product.barcode,
+        price: product.price,
+        weight: product.stock_count || 0.5 // Use average_weight in production
+      }));
+    
+    if (simulatedDetectedItems.length > 0 && unbilledItems.length === 0) {
+      setUnbilledItems(simulatedDetectedItems);
+      toast.warning(`${simulatedDetectedItems.length} unbilled items detected in basket!`);
     }
   };
 
@@ -198,6 +307,24 @@ const Scan = () => {
   const handleLogout = async () => {
     await signOut();
     navigate('/login');
+  };
+
+  const handleAddUnbilledItem = async (itemId: string) => {
+    await addToCart(itemId);
+    setUnbilledItems(prev => prev.filter(item => item.id !== itemId));
+  };
+
+  const handleAddAllUnbilled = async () => {
+    for (const item of unbilledItems) {
+      await addToCart(item.id);
+    }
+    setUnbilledItems([]);
+    toast.success('All unbilled items added to cart');
+  };
+
+  const handleDismissUnbilled = () => {
+    setUnbilledItems([]);
+    toast.info('Unbilled items alert dismissed');
   };
 
   return (
@@ -435,6 +562,34 @@ const Scan = () => {
 
           {/* Right Column - Trolley Control & Map */}
           <div className="space-y-6">
+            
+            {/* Unbilled Items Alert */}
+            <UnbilledItemsAlert 
+              items={unbilledItems}
+              onAddItem={handleAddUnbilledItem}
+              onAddAll={handleAddAllUnbilled}
+              onDismiss={handleDismissUnbilled}
+            />
+            
+            {/* Weight Display */}
+            <WeightDisplay 
+              currentWeight={weightData.currentWeight}
+              expectedWeight={weightData.expectedWeight}
+              tolerance={weightData.tolerance}
+              status={weightData.status}
+            />
+            
+            {/* USB Status */}
+            <USBStatus 
+              onConnect={() => {
+                setUsbConnected(true);
+                toast.success('USB URTF Reader connected');
+              }}
+              onDisconnect={() => {
+                setUsbConnected(false);
+                toast.info('USB URTF Reader disconnected');
+              }}
+            />
             
             {/* Trolley Status Card */}
             <Card className="glass border-white/20">

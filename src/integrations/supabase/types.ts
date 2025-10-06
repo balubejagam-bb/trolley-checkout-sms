@@ -49,6 +49,45 @@ export type Database = {
           },
         ]
       }
+      cart_monitoring: {
+        Row: {
+          created_at: string | null
+          discrepancy: number
+          expected_weight: number
+          id: string
+          measured_weight: number
+          session_id: string
+          status: string
+          unbilled_items: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          discrepancy: number
+          expected_weight: number
+          id?: string
+          measured_weight: number
+          session_id: string
+          status?: string
+          unbilled_items?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          discrepancy?: number
+          expected_weight?: number
+          id?: string
+          measured_weight?: number
+          session_id?: string
+          status?: string
+          unbilled_items?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           barcode: string
@@ -150,6 +189,7 @@ export type Database = {
       }
       products: {
         Row: {
+          average_weight: number | null
           barcode: string
           brand: string | null
           category: string | null
@@ -162,8 +202,10 @@ export type Database = {
           price: number
           stock_count: number | null
           updated_at: string | null
+          weight_tolerance: number | null
         }
         Insert: {
+          average_weight?: number | null
           barcode: string
           brand?: string | null
           category?: string | null
@@ -176,8 +218,10 @@ export type Database = {
           price: number
           stock_count?: number | null
           updated_at?: string | null
+          weight_tolerance?: number | null
         }
         Update: {
+          average_weight?: number | null
           barcode?: string
           brand?: string | null
           category?: string | null
@@ -190,6 +234,7 @@ export type Database = {
           price?: number
           stock_count?: number | null
           updated_at?: string | null
+          weight_tolerance?: number | null
         }
         Relationships: []
       }
